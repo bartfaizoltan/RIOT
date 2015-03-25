@@ -96,6 +96,12 @@ char *thread_arch_stack_init(thread_task_func_t task_func, void *arg,
     *stk = (uint8_t) 0x00;
 #endif
 
+#if defined(__AVR_ATmega256RFR2__)
+    /* The ATMega256RFR2 uses a 16 bit PC, we set whole the top byte forcibly to 0 */
+    stk--;
+    *stk = (uint8_t) 0x00;
+#endif
+
     /* save address to task_func in place of the program counter */
     stk--;
     tmp_adress = (uint16_t) task_func;
@@ -110,6 +116,11 @@ char *thread_arch_stack_init(thread_task_func_t task_func, void *arg,
     *stk = (uint8_t) 0x00;
 #endif
 
+#if defined(__AVR_ATmega256RFR2__)
+    /* The ATMega256RFR2 uses a 16 bit PC, we set whole the top byte forcibly to 0 */
+    stk--;
+    *stk = (uint8_t) 0x00;
+#endif
 
     /* r0 */
     stk--;
@@ -119,7 +130,7 @@ char *thread_arch_stack_init(thread_task_func_t task_func, void *arg,
     stk--;
     *stk = (uint8_t) 0x80;
 
-#if defined(__AVR_ATmega2560__)
+#if defined(__AVR_ATmega2560__) || defined(__AVR_ATmega256RFR2__)
     /* EIND */
     stk--;
     *stk = (uint8_t) 0x00;
@@ -241,7 +252,7 @@ __attribute__((always_inline)) static inline void __context_save(void)
         "in   r0, __SREG__                   \n\t"
         "cli                                 \n\t"
         "push r0                             \n\t"
-#if defined(__AVR_ATmega2560__)
+#if defined(__AVR_ATmega2560__) || defined(__AVR_ATmega256RFR2__)
         /* EIND and RAMPZ */
         "in     r0, 0x3b                     \n\t"
         "push   r0                           \n\t"
@@ -330,7 +341,7 @@ __attribute__((always_inline)) static inline void __context_restore(void)
         "pop  r3                             \n\t"
         "pop  r2                             \n\t"
         "pop  r1                             \n\t"
-#if defined(__AVR_ATmega2560__)
+#if defined(__AVR_ATmega2560__) || defined(__AVR_ATmega256RFR2__)
         /* EIND and RAMPZ */
         "pop    r0                           \n\t"
         "out    0x3c, r0                     \n\t"

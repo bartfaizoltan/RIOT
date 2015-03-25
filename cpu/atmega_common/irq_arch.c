@@ -57,9 +57,15 @@ __attribute__((always_inline)) inline void __set_interrupt_state(uint8_t state)
  */
 unsigned int irq_arch_disable(void)
 {
+#ifdef __AVR_ATmega256RFR2__
+    uint8_t mask = SREG;
+    cli();
+    return (unsigned int) mask;
+#else     
     uint8_t mask = __get_interrupt_state();
     cli();
     return (unsigned int) mask;
+#endif    
 }
 
 /**
@@ -68,7 +74,12 @@ unsigned int irq_arch_disable(void)
 unsigned int irq_arch_enable(void)
 {
     sei();
+#ifdef __AVR_ATmega256RFR2__
+    uint8_t mask = SREG;
+    return (unsigned int) mask;
+#else     
     return __get_interrupt_state();
+#endif    
 }
 
 /**
@@ -76,7 +87,11 @@ unsigned int irq_arch_enable(void)
  */
 void irq_arch_restore(unsigned int state)
 {
+#ifdef __AVR_ATmega256RFR2__
+    SREG = state;
+#else    
     __set_interrupt_state(state);
+#endif    
 }
 
 /**
