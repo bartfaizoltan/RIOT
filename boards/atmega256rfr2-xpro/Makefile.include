@@ -1,9 +1,10 @@
 
 # define the cpu used by the arduino mega2560 board
-export CPU = atmega2560
+export CPU = atmega256rfr2
 
 # define tools used for building the project
-export PREFIX = avr-
+export PREFIX = /avr8/bin/avr-
+#export PREFIX = avr-
 export CC = $(PREFIX)gcc
 export CXX = $(PREFIX)c++
 export AR = $(PREFIX)ar
@@ -37,14 +38,14 @@ export DEBUGGER = $(DIST_PATH)/debug.sh $(DEBUGSERVER_FLAGS) $(DIST_PATH) $(DEBU
 
 # PROGRAMMER defaults to stk500v2 which is the internal flasher via USB. Can be
 # overridden for debugging (which requires changes that require to use an ISP)
-export PROGRAMMER ?= stk500v2
+export PROGRAMMER ?= xplainedpro
 
 ifeq ($(PROGRAMMER), stk500v2)
     export PROGRAMMER_FLAGS = -P $(PORT) -b 115200
 endif
 
 # define build specific options
-export CPU_USAGE = -mmcu=atmega2560
+export CPU_USAGE = -mmcu=atmega256rfr2
 export CFLAGS += -ggdb -g3 -std=gnu99 -Os -Wall -Wstrict-prototypes $(CPU_USAGE)
 export ASFLAGS += -ggdb -g3 $(CPU_USAGE) $(FPU_USAGE)
 export LINKFLAGS += -g3 -ggdb -std=gnu99 $(CPU_USAGE) $(FPU_USAGE) -static -lgcc -e reset_handler
