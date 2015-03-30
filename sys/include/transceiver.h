@@ -87,6 +87,13 @@
 #endif
 #endif
 
+#ifdef MODULE_ATMEGARFR2
+#include "atmegarfr2.h"
+#ifndef TRANSCEIVER_DEFAULT
+#define TRANSCEIVER_DEFAULT TRANSCEIVER_ATMEGARFR2
+#endif
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -127,6 +134,11 @@ extern "C" {
 #if (AT86RF231_MAX_DATA_LENGTH > PAYLOAD_SIZE)
 #undef PAYLOAD_SIZE
 #define PAYLOAD_SIZE  (AT86RF231_MAX_DATA_LENGTH)
+#endif
+#ifdef MODULE_ATMEGARFR2
+#if (ATMEGARFR2_MAX_DATA_LENGTH > PAYLOAD_SIZE)
+#undef PAYLOAD_SIZE
+#define PAYLOAD_SIZE  (ATMEGARFR2_MAX_DATA_LENGTH)
 #endif
 #endif
 #ifdef MODULE_MC1322X
@@ -172,6 +184,7 @@ extern "C" {
 #define TRANSCEIVER_MC1322X     (0x08)      /**< MC1322X transceivers */
 #define TRANSCEIVER_NATIVE      (0x10)      /**< NATIVE transceivers */
 #define TRANSCEIVER_AT86RF231   (0x20)      /**< AT86RF231 transceivers */
+#define TRANSCEIVER_ATMEGARFR2  (0x40)      /**< ATMEGARFR2 transceivers */
 /**
  * @}
  */
@@ -197,6 +210,7 @@ enum transceiver_msg_type_t {
     RCV_PKT_MC1322X,       /**< packet was received by mc1322x transceiver */
     RCV_PKT_NATIVE,        /**< packet was received by native transceiver */
     RCV_PKT_AT86RF231,     /**< packet was received by AT86RF231 transceiver */
+    RCV_PKT_ATMEGARFR2,    /**< packet was received by ATMEGARFR2 transceiver */
 
     /* Message types for transceiver <-> upper layer communication */
     PKT_PENDING,    /**< packet pending in transceiver buffer */

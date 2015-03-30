@@ -35,6 +35,14 @@
 #endif /* NETDEV_DEFAULT */
 #endif /* MODULE_AT86RF231 */
 
+#ifdef MODULE_ATMEGARFR2
+#include "atmegarfr2.h"
+
+#ifndef NETDEV_DEFAULT
+#define NETDEV_DEFAULT  ((netdev_t *)(&atmegarfr2_netdev))
+#endif /* NETDEV_DEFAULT */
+#endif /* MODULE_ATMEGARFR2 */
+
 #ifdef MODULE_CC110X
 #include "cc110x.h"
 

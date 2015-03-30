@@ -124,6 +124,9 @@ void create_usage(void)
 #ifdef MODULE_AT86RF231
          "        * at86rv231\n"
 #endif
+#ifdef MODULE_ATMEGARFR2
+         "        * atmegarfr2\n"
+#endif
 #ifdef MODULE_CC1020
          "        * cc1020\n"
 #endif

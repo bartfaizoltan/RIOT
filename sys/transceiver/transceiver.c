@@ -64,6 +64,11 @@
 #include "ieee802154_frame.h"
 #endif
 
+#ifdef MODULE_ATMEGARFR2
+#include "atmegarfr2.h"
+#include "ieee802154_frame.h"
+#endif
+
 #define ENABLE_DEBUG (0)
 #if ENABLE_DEBUG
 #undef TRANSCEIVER_STACK_SIZE
@@ -129,6 +134,9 @@ void receive_mc1322x_packet(ieee802154_packet_t *trans_p);
 #endif
 #ifdef MODULE_AT86RF231
 void receive_at86rf231_packet(ieee802154_packet_t *trans_p);
+#endif
+#ifdef MODULE_ATMEGARFR2
+void receive_atmegarfr2_packet(ieee802154_packet_t *trans_p);
 #endif
 static int8_t send_packet(transceiver_type_t t, void *pkt);
 static int32_t get_channel(transceiver_type_t t);
@@ -218,6 +226,13 @@ kernel_pid_t transceiver_start(void)
     else if (transceivers & TRANSCEIVER_AT86RF231) {
         DEBUG("transceiver: Transceiver started for AT86RF231\n");
         at86rf231_init(transceiver_pid);
+    }
+
+#endif
+#ifdef MODULE_ATMEGARFR2
+    else if (transceivers & TRANSCEIVER_ATMEGARFR2) {
+        DEBUG("transceiver: Transceiver started for ATMEGARFR2\n");
+        atmegarfr2_init(transceiver_pid);
     }
 
 #endif
@@ -472,6 +487,12 @@ static void receive_packet(uint16_t type, uint8_t pos)
             receive_at86rf231_packet(trans_p);
 #endif
         }
+        else if (type == RCV_PKT_ATMEGARFR2) {
+#ifdef MODULE_ATMEGARFR2
+            ieee802154_packet_t *trans_p = &(transceiver_buffer[transceiver_buffer_pos]);
+            receive_atmegarfr2_packet(trans_p);
+#endif
+        }
         else if (type == RCV_PKT_NATIVE) {
 #ifdef MODULE_NATIVENET
             radio_packet_t *trans_p = &(transceiver_buffer[transceiver_buffer_pos]);
@@ -710,6 +731,49 @@ void receive_at86rf231_packet(ieee802154_packet_t *trans_p)
     DEBUG("Content: %s\n", trans_p->frame.payload);
 }
 #endif
+
+#ifdef MODULE_ATMEGARFR2
+void receive_atmegarfr2_packet(ieee802154_packet_t *trans_p)
+{
+    DEBUG("Handling ATMEGARFR2 packet\n");
+    dINT();
+    atmegarfr2_packet_t *p = &atmegarfr2_rx_buffer[rx_buffer_pos];
+    trans_p->length = p->length;
+    trans_p->rssi = p->rssi;
+    trans_p->crc = p->crc;
+    trans_p->lqi = p->lqi;
+    memcpy(&trans_p->frame, &p->frame, sizeof(trans_p->frame));
+    memcpy(&data_buffer[transceiver_buffer_pos * ATMEGARFR2_MAX_DATA_LENGTH], p->frame.payload,
+           p->frame.payload_len);
+    trans_p->frame.payload = (uint8_t *) & (data_buffer[transceiver_buffer_pos * ATMEGARFR2_MAX_DATA_LENGTH]);
+    trans_p->frame.payload_len = p->frame.payload_len;
+    eINT();
+
+#if ENABLE_DEBUG
+
+    if (trans_p->frame.fcf.dest_addr_m == IEEE_802154_SHORT_ADDR_M) {
+        if (trans_p->frame.fcf.src_addr_m == IEEE_802154_SHORT_ADDR_M) {
+            DEBUG("Packet %p was from %" PRIu16 " to %" PRIu16 ", size: %u\n", trans_p, *((uint16_t *) &trans_p->frame.src_addr[0]), *((uint16_t *) &trans_p->frame.dest_addr), trans_p->frame.payload_len);
+        }
+        else {
+            DEBUG("Packet %p was from %016" PRIx64 " to %" PRIu16 ", size: %u\n", trans_p, *((uint64_t *) &trans_p->frame.src_addr[0]), *((uint16_t *) &trans_p->frame.dest_addr), trans_p->frame.payload_len);
+
+        }
+    }
+    else {
+        if (trans_p->frame.fcf.src_addr_m == IEEE_802154_SHORT_ADDR_M) {
+            DEBUG("Packet %p was from %" PRIu16 " to %016" PRIx64 ", size: %u\n", trans_p, *((uint16_t *) &trans_p->frame.src_addr[0]), *((uint64_t *) &trans_p->frame.dest_addr), trans_p->frame.payload_len);
+        }
+        else {
+            DEBUG("Packet %p was from %016" PRIx64 " to %016" PRIx64 ", size: %u\n", trans_p, *((uint64_t *) &trans_p->frame.src_addr[0]), *((uint16_t *) &trans_p->frame.dest_addr), trans_p->frame.payload_len);
+
+        }
+    }
+
+#endif
+    DEBUG("Content: %s\n", trans_p->frame.payload);
+}
+#endif
 /*------------------------------------------------------------------------------------*/
 /*
  * @brief Sends a radio packet to the receiver
@@ -759,6 +823,10 @@ static int8_t send_packet(transceiver_type_t t, void *pkt)
     at86rf231_packet_t at86rf231_pkt;
 #endif
 
+#ifdef MODULE_ATMEGARFR2
+    atmegarfr2_packet_t atmegarfr2_pkt;
+#endif
+
     switch (t) {
         case TRANSCEIVER_CC1100:
 #if (defined(MODULE_CC110X) || defined(MODULE_CC110X_LEGACY))
@@ -805,6 +873,14 @@ static int8_t send_packet(transceiver_type_t t, void *pkt)
             memcpy(&at86rf231_pkt.frame, &p->frame, sizeof(ieee802154_frame_t));
             at86rf231_pkt.length = p->frame.payload_len + IEEE_802154_FCS_LEN;
             res = at86rf231_send(&at86rf231_pkt);
+            break;
+#endif
+#ifdef MODULE_ATMEGARFR2
+
+        case TRANSCEIVER_ATMEGARFR2:
+            memcpy(&atmegarfr2_pkt.frame, &p->frame, sizeof(ieee802154_frame_t));
+            atmegarfr2_pkt.length = p->frame.payload_len + IEEE_802154_FCS_LEN;
+            res = atmegarfr2_send(&atmegarfr2_pkt);
             break;
 #endif
 
@@ -861,6 +937,11 @@ static int32_t set_channel(transceiver_type_t t, void *channel)
         case TRANSCEIVER_AT86RF231:
             return at86rf231_set_channel(c);
 #endif
+#ifdef MODULE_ATMEGARFR2
+
+        case TRANSCEIVER_ATMEGARFR2:
+            return atmegarfr2_set_channel(c);
+#endif
 
         default:
             return -1;
@@ -906,6 +987,11 @@ static int32_t get_channel(transceiver_type_t t)
         case TRANSCEIVER_AT86RF231:
             return at86rf231_get_channel();
 #endif
+#ifdef MODULE_ATMEGARFR2
+
+        case TRANSCEIVER_ATMEGARFR2:
+            return atmegarfr2_get_channel();
+#endif
 
         default:
             return -1;
@@ -940,6 +1026,11 @@ static int32_t set_pan(transceiver_type_t t, void *pan)
 
         case TRANSCEIVER_AT86RF231:
             return at86rf231_set_pan(c);
+#endif
+#ifdef MODULE_ATMEGARFR2
+
+        case TRANSCEIVER_ATMEGARFR2:
+            return atmegarfr2_set_pan(c);
 #endif
 #ifdef MODULE_MC1322X
 
@@ -978,6 +1069,11 @@ static int32_t get_pan(transceiver_type_t t)
 
         case TRANSCEIVER_AT86RF231:
             return at86rf231_get_pan();
+#endif
+#ifdef MODULE_ATMEGARFR2
+
+        case TRANSCEIVER_ATMEGARFR2:
+            return atmegarfr2_get_pan();
 #endif
 #ifdef MODULE_MC1322X
 
@@ -1030,6 +1126,11 @@ static radio_address_t get_address(transceiver_type_t t)
         case TRANSCEIVER_AT86RF231:
             return at86rf231_get_address();
 #endif
+#ifdef MODULE_ATMEGARFR2
+
+        case TRANSCEIVER_ATMEGARFR2:
+            return atmegarfr2_get_address();
+#endif
 
         default:
             return 0; /* XXX see TODO above */
@@ -1081,6 +1182,11 @@ static radio_address_t set_address(transceiver_type_t t, void *address)
         case TRANSCEIVER_AT86RF231:
             return at86rf231_set_address(addr);
 #endif
+#ifdef MODULE_ATMEGARFR2
+
+        case TRANSCEIVER_ATMEGARFR2:
+            return atmegarfr2_set_address(addr);
+#endif
 
         default:
             return 0; /* XXX see TODO above */
@@ -1106,6 +1212,11 @@ static transceiver_eui64_t get_long_addr(transceiver_type_t t)
 
         case TRANSCEIVER_AT86RF231:
             return at86rf231_get_address_long();
+#endif
+#ifdef MODULE_ATMEGARFR2
+
+        case TRANSCEIVER_ATMEGARFR2:
+            return atmegarfr2_get_address_long();
 #endif
 
         default:
@@ -1135,6 +1246,11 @@ static transceiver_eui64_t set_long_addr(transceiver_type_t t, void *address)
 
         case TRANSCEIVER_AT86RF231:
             return at86rf231_set_address_long(addr);
+#endif
+#ifdef MODULE_ATMEGARFR2
+
+        case TRANSCEIVER_ATMEGARFR2:
+            return atmegarfr2_set_address_long(addr);
 #endif
 
         default:
@@ -1176,6 +1292,11 @@ static void set_monitor(transceiver_type_t t, void *mode)
 
         case TRANSCEIVER_AT86RF231:
             at86rf231_set_monitor(*((uint8_t *) mode));
+#endif
+#ifdef MODULE_ATMEGARFR2
+
+        case TRANSCEIVER_ATMEGARFR2:
+            atmegarfr2_set_monitor(*((uint8_t *) mode));
 #endif
 
         default:
@@ -1250,6 +1371,11 @@ static void switch_to_rx(transceiver_type_t t)
 
         case TRANSCEIVER_AT86RF231:
             at86rf231_switch_to_rx();
+#endif
+#ifdef MODULE_ATMEGARFR2
+
+        case TRANSCEIVER_ATMEGARFR2:
+            atmegarfr2_switch_to_rx();
 #endif
 
         default:

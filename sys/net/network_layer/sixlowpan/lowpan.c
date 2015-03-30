@@ -701,8 +701,12 @@ void check_timeout(void)
 
     while (temp_buf != NULL) {
         if ((timex_uint64(now) - timex_uint64(temp_buf->timestamp)) >= LOWPAN_REAS_BUF_TIMEOUT) {
+#ifdef MODULE_ATMEGA_COMMON
+	    printf("TIMEOUT!\n");
+#else	    
             printf("TIMEOUT!cur_time: %" PRIu64 ", temp_buf: %" PRIu64 "\n", timex_uint64(now),
                    timex_uint64(temp_buf->timestamp));
+#endif		   
             temp_buf = collect_garbage(temp_buf);
         }
         else {
