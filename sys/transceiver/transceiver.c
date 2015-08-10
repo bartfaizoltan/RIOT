@@ -84,7 +84,7 @@ static transceiver_type_t transceivers = TRANSCEIVER_NONE;
 static registered_t reg[TRANSCEIVER_MAX_REGISTERED];
 
 /* packet buffers */
-#if MODULE_AT86RF231 || MODULE_CC2420 || MODULE_MC1322X
+#if MODULE_AT86RF231 || MODULE_ATMEGARFR2 || MODULE_CC2420 || MODULE_MC1322X
 static ieee802154_packet_t transceiver_buffer[TRANSCEIVER_BUFFER_SIZE];
 #else
 static radio_packet_t transceiver_buffer[TRANSCEIVER_BUFFER_SIZE];
@@ -506,7 +506,7 @@ static void receive_packet(uint16_t type, uint8_t pos)
 
 #ifdef DBG_IGNORE
 
-#if MODULE_AT86RF231 || MODULE_CC2420 || MODULE_MC1322X
+#if MODULE_AT86RF231 || MODULE_ATMEGARFR2 || MODULE_CC2420 || MODULE_MC1322X
         radio_address_t short_addr;
         short_addr = (transceiver_buffer[transceiver_buffer_pos].frame.src_addr[1] << 8)
             | transceiver_buffer[transceiver_buffer_pos].frame.src_addr[0];
@@ -749,7 +749,7 @@ void receive_atmegarfr2_packet(ieee802154_packet_t *trans_p)
     trans_p->frame.payload_len = p->frame.payload_len;
     eINT();
 
-#if ENABLE_DEBUG
+#if ENABLE_DEBUG_TODO
 
     if (trans_p->frame.fcf.dest_addr_m == IEEE_802154_SHORT_ADDR_M) {
         if (trans_p->frame.fcf.src_addr_m == IEEE_802154_SHORT_ADDR_M) {
@@ -787,7 +787,7 @@ void receive_atmegarfr2_packet(ieee802154_packet_t *trans_p)
 static int8_t send_packet(transceiver_type_t t, void *pkt)
 {
     int8_t res = -1;
-#if MODULE_AT86RF231 || MODULE_CC2420 || MODULE_MC1322X
+#if MODULE_AT86RF231 || MODULE_ATMEGARFR2 || MODULE_CC2420 || MODULE_MC1322X
     ieee802154_packet_t *p = (ieee802154_packet_t *)pkt;
     DEBUG("transceiver: Send packet to ");
 #if ENABLE_DEBUG

@@ -180,7 +180,11 @@ void _transceiver_get_set_long_addr_handler(int argc, char **argv)
 #else
         a = _str_to_eui64(argv[1]);
 #endif
+#ifdef MODULE_ATMEGA_COMMON 
+        printf("[transceiver] trying to set EUI-64 @@TODO@@\n");
+#else	
         printf("[transceiver] trying to set EUI-64 %016"PRIx64"\n", a);
+#endif	
         mesg.type = SET_LONG_ADDR;
     }
     else {
@@ -188,7 +192,11 @@ void _transceiver_get_set_long_addr_handler(int argc, char **argv)
     }
 
     msg_send_receive(&mesg, &mesg, transceiver_pid);
+#ifdef MODULE_ATMEGA_COMMON 
+    printf("[transceiver] got EUI-64: TODO\n");
+#else    
     printf("[transceiver] got EUI-64: %016"PRIx64"\n", a);
+#endif    
 }
 
 
